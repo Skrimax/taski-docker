@@ -1,0 +1,63 @@
+volumes:
+  pg_data:
+  static:
+
+services:
+  db:
+    image: postgres:13.10
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - taski-net
+
+  backend:
+    build: ./backend/
+    env_file: .env
+#    volumes:
+#      - static:/backend_static
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DB_HOST=db
+    depends_on:
+      - db
+    networks:
+      - taski-net
+
+  frontend:
+    env_file: .env
+    build: ./frontend/
+    #command: cp -r /app/build/. /frontend_static/
+    #volumes:
+    #  - static:/frontend_static
+    networks:
+      - taski-net
+
+  gateway:
+    build: ./gateway/
+    command: nginx -g "daemon off;"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf   # <-- важно
+      - static:/staticfiles
+    ports:
+      - "80:80"
+    networks:
+      - taski-net
+    depends_on:
+      - backend
+#  gateway:
+#    build: ./gateway/
+    #command: nginx -g "daemon off;"
+#    volumes:
+    #  - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf
+#      - static:/staticfiles
+#    ports:
+#      - 8000:80
+#    networks:
+#      - taski-net
+    #depends_on:
+    #  - backend
+
+networks:
+  taski-net:
+    driver: bridge
